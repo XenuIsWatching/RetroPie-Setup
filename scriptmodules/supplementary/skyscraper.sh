@@ -280,7 +280,7 @@ function _scrape_skyscraper() {
 
     if [[ "$use_rom_folder" -eq 1 ]]; then
         params+=(-g "$romdir/$system")
-        params+=(-o "$romdir/$system/.media")
+        params+=(-o "$romdir/$system/$folder_name")
         # If we're saving to the ROM folder, then use relative paths in the gamelist
         flags+="relative,"
     else
@@ -393,7 +393,8 @@ function _load_config_skyscraper() {
         'scrape_source=screenscraper' \
         'remove_brackets=0' \
         'force_refresh=0' \
-        'only_missing=0'
+        'only_missing=0' \
+        'folder_name=media'
     )"
 }
 
@@ -814,6 +815,7 @@ function _gui_generate_skyscraper() {
         [1]="Game name format used in the EmulationStation game list. Available options:\n\n\ZbSource name\Zn: use the name returned by the scraper\n\ZbFilename\Zn: use the filename of the ROM as game name\n\nSkyscraper option: \Zb--flags forcefilename\Z0"
         [2]="Game name option to remove/keep the text found between '()' and '[]' in the ROMs filename.\n\nSkyscraper option: \Zb--flags nobrackets\Zn"
         [3]="Choose to save the generated 'gamelist.xml' and media in the ROMs folder. Supported options:\n\n\ZbEnabled\Zn saves the 'gamelist.xml' in the ROMs folder and the media in the 'media' sub-folder.\n\n\ZbDisabled\Zn saves the 'gamelist.xml' in \Zu\$HOME/.emulationstation/gamelists/<system>\Zn and the media in \Zu\$HOME/.emulationstation/downloaded_media\Zn.\n\n\Zb\ZrNOTE\Zn: changing this option will not automatically copy the 'gamelist.xml' file and the media to the new location or remove the ones in the old location. You must do this manually.\n\nSkyscraper parameters: \Zb-g <gamelist>\Zn / \Zb-o <path>\Zn"
+        [4]="Folder name of the media in the ROMs folder. Changing this option will not automatically update the 'gamelist.xml' file and the media to the new location or remove the ones in the old location. You must do this manually."
     )
 
     while true; do
@@ -835,6 +837,7 @@ function _gui_generate_skyscraper() {
 
         if [[ "$use_rom_folder" -eq 1 ]]; then
             options+=(3 "Use ROM folders for game list & media (Enabled)")
+            options+=(4 "Configure media folder name (\"$folder_name\")")
         else
             options+=(3 "Use ROM folders for game list & media (Disabled)")
         fi
@@ -859,6 +862,20 @@ function _gui_generate_skyscraper() {
                 3)
                     use_rom_folder="$((use_rom_folder ^ 1))"
                     iniSet "use_rom_folder" "$use_rom_folder"
+                    ;;
+
+                4)
+                    #TODO: check for valid name
+                    cmd=(dialog --backtitle "$__backtitle" --inputbox "Please enter the name of the folder to be used" 10 35)
+                    new_folder_name=$("${cmd[@]}" 2>&1 >/dev/tty)
+                    # if there is already a folder, move existing folder and update gamelist.xml
+                    #if $new_folder_name != $folder_name && [ $(find "$romdir" -mindepth 2 -maxdepth 2 -type d -name "$folder_name" | wc -l)  -gt 0 ]; then
+                    #    printMsgs "dialog" "moving files"
+                    #    find "$romdir" -mindepth 2 -maxdepth 2 -type f -name 'gamelist.xml' -exec sed -i "s#/$folder_name/#/$new_folder_name/#g"  {} \;
+                    #    find "$romdir" -mindepth 2 -maxdepth 2 -type d -name "$folder_name" -execdir mv '{}' "$new_folder_name" ';'
+                    #fi
+                    folder_name=$new_folder_name
+                    iniSet "folder_name" "$new_folder_name"
                     ;;
 
                 HELP*)
